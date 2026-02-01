@@ -5,8 +5,9 @@
     <title>AR Sin Bordes</title>
     <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.3.0/dist/aframe-master.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
-    
+
     <style>
+      /* Estilo del cargador */
       .arjs-loader {
         height: 100%; width: 100%; position: absolute; top: 0; left: 0;
         background-color: rgba(0, 0, 0, 0.8); z-index: 9999; display: flex;
@@ -20,27 +21,41 @@
 
   <body style="margin : 0px; overflow: hidden;">
     <div class="arjs-loader">
-      <div>Cargando experiencia AR...<br/>(Puede tardar unos segundos)</div>
+      <div>Cargando experiencia AR...<br/>(Espera a que desaparezca este mensaje)</div>
     </div>
 
     <a-scene
       vr-mode-ui="enabled: false;"
-      renderer="logarithmicDepthBuffer: true;"
+      renderer="logarithmicDepthBuffer: true; precision: medium;"
       embedded
       arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
 
+      <a-assets>
+        <video 
+            id="mivideo" 
+            src="./video.mp4" 
+            preload="auto" 
+            response-type="arraybuffer" 
+            loop 
+            crossorigin 
+            webkit-playsinline 
+            playsinline 
+            muted>
+        </video>
+      </a-assets>
+
       <a-nft
         type="nft"
-        url="./foto" 
+        url="./foto"
         smooth="true"
         smoothCount="10"
         smoothTolerance=".01"
         smoothThreshold="5">
           
           <a-video
-            src="./video.mp4"
-            width="200"
-            height="150"
+            src="#mivideo"
+            width="160"
+            height="90"
             position="0 0 -50"
             rotation="-90 0 0">
           </a-video>
@@ -49,5 +64,27 @@
 
       <a-entity camera></a-entity>
     </a-scene>
+
+    <script>
+      window.addEventListener('load', () => {
+        const video = document.getElementById('mivideo');
+        // Intentar reproducir silenciosamente para desbloquearlo
+        video.play().then(() => {
+          video.pause();
+        }).catch((e) => {
+          console.log("Esperando interacción para reproducir video");
+        });
+
+        // Cuando se detecte la imagen (markerFound), reproducir
+        const nft = document.querySelector('a-nft');
+        nft.addEventListener('markerFound', () => {
+          video.play();
+        });
+        // Cuando se pierda la imagen (markerLost), pausar
+        nft.addEventListener('markerLost', () => {
+          video.pause();
+        });
+      });
+    </script>
   </body>
 </html>
