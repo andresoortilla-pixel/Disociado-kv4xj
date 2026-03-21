@@ -3,77 +3,33 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Otavalango AR</title>
+    <title>Otavalango AR - Corrección</title>
 
     <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.3.0/dist/aframe-master.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar-nft.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
 
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-
-      html, body {
-        width: 100vw;
-        height: 100vh;
-        overflow: hidden;
-        background: #000;
-      }
-
-      /* Forzar escena a pantalla completa */
-      a-scene {
-        width: 100vw !important;
-        height: 100vh !important;
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-      }
-
-      /* Video de la camara a pantalla completa */
-      .arjs-video {
-        width: 100vw !important;
-        height: 100vh !important;
-        object-fit: cover !important;
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        transform: none !important;
-      }
+      body { margin: 0; overflow: hidden; background: #000; }
 
       #status {
-        position: fixed;
-        top: 10px;
-        left: 10px;
-        right: 10px;
-        z-index: 9999;
-        background: rgba(0,0,0,0.7);
-        color: #fff;
-        font-size: 13px;
-        padding: 10px 14px;
-        border-radius: 8px;
-        line-height: 1.8;
-        pointer-events: none;
-      }
-
-      #status.found {
-        background: rgba(0,140,0,0.85);
+        position: fixed; top: 10px; left: 10px; right: 10px;
+        z-index: 9999; background: rgba(0,0,0,0.75); color: white;
+        font-size: 14px; padding: 12px; border-radius: 8px;
+        pointer-events: none; text-align: center; font-family: sans-serif;
       }
 
       .arjs-loader {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0,0,0,0.88);
-        z-index: 9998;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.9); z-index: 9998;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        font-family: sans-serif;
       }
 
-      .arjs-loader div {
-        text-align: center;
-        font-size: 1.1em;
-        color: #fff;
-        padding: 24px;
-        line-height: 2;
+      /* CLAVE 2: Botón para dar permiso al navegador de reproducir video */
+      #start-btn {
+        margin-top: 20px; padding: 15px 30px; font-size: 18px;
+        background: #28a745; color: white; border: none; border-radius: 8px;
+        cursor: pointer; display: none;
       }
     </style>
   </head>
@@ -81,13 +37,15 @@
   <body>
 
     <div class="arjs-loader" id="loader">
-      <div>Cargando AR...<br/>Por favor espera...</div>
+      <div id="loading-text" style="color:white; font-size:1.2em; margin-bottom: 20px; text-align: center;">
+        Cargando cámara y descriptores...<br>Esto puede tardar unos segundos.
+      </div>
+      <button id="start-btn">Comenzar Experiencia</button>
     </div>
 
     <div id="status">⏳ Iniciando cámara...</div>
 
     <a-scene
-      embedded
       vr-mode-ui="enabled: false;"
       renderer="logarithmicDepthBuffer: true; precision: medium;"
       arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
@@ -115,9 +73,9 @@
 
         <a-video
           src="#mi-video"
-          width="1.6"
-          height="0.9"
-          position="0 0 0.1"
+          width="160"
+          height="90"
+          position="0 0 0"
           rotation="-90 0 0">
         </a-video>
 
@@ -128,46 +86,45 @@
     </a-scene>
 
     <script>
-      const scene  = document.querySelector("a-scene");
+      const scene = document.querySelector("a-scene");
       const loader = document.getElementById("loader");
-      const video  = document.getElementById("mi-video");
+      const loadingText = document.getElementById("loading-text");
+      const startBtn = document.getElementById("start-btn");
+      const video = document.getElementById("mi-video");
       const marker = document.getElementById("nft-marker");
       const status = document.getElementById("status");
 
+      // Cuando los elementos 3D cargan, mostramos el botón
       scene.addEventListener("loaded", function () {
-        loader.style.display = "none";
-        status.innerText = "✅ Cámara activa\n🔍 Apunta a la imagen...";
-
-        // Arreglar tamaño de todos los elementos de camara
-        setTimeout(function() {
-          document.querySelectorAll("video, canvas").forEach(function(el) {
-            el.style.width      = "100vw";
-            el.style.height     = "100vh";
-            el.style.position   = "fixed";
-            el.style.top        = "0";
-            el.style.left       = "0";
-            el.style.transform  = "none";
-            el.style.objectFit  = "cover";
-          });
-        }, 500);
+        loadingText.innerHTML = "¡Cámara y archivos listos!";
+        startBtn.style.display = "block";
       });
 
-      setTimeout(function () { loader.style.display = "none"; }, 10000);
-
-      marker.addEventListener("markerFound", function () {
-        status.className = "found";
-        status.innerText = "🟢 ¡Imagen detectada! Reproduciendo video...";
-        video.play().catch(function(e) {
-          status.innerText = "🟢 Imagen detectada\n⚠️ Error al reproducir: " + e.message;
+      // El usuario debe hacer clic para dar permiso al video
+      startBtn.addEventListener("click", function() {
+        loader.style.display = "none";
+        status.innerText = "✅ Escena lista\n📷 Apunta la cámara a la imagen";
+        
+        // Truco para sortear el bloqueo de Safari/Chrome
+        video.play().then(() => {
+            video.pause();
+        }).catch((e) => {
+            console.log("Esperando detección para reproducir.");
         });
       });
 
+      // Eventos de detección
+      marker.addEventListener("markerFound", function () {
+        status.style.background = "rgba(0, 150, 0, 0.85)";
+        status.innerText = "🟢 ¡IMAGEN DETECTADA! Reproduciendo...";
+        video.play();
+      });
+
       marker.addEventListener("markerLost", function () {
-        status.className = "";
-        status.innerText = "🔴 Imagen perdida - Vuelve a apuntar";
+        status.style.background = "rgba(0,0,0,0.75)";
+        status.innerText = "🔴 Imagen perdida\n📷 Vuelve a apuntar";
         video.pause();
       });
     </script>
-
   </body>
 </html>
