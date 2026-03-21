@@ -3,36 +3,40 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Otavalango Museo Viviente AR</title>
+    <title>Otavalango AR - Debug</title>
 
     <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.6.0/dist/aframe-master.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
 
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+
+      #status {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        z-index: 9999;
+        background: rgba(0,0,0,0.75);
+        color: white;
+        font-size: 14px;
+        padding: 12px;
+        border-radius: 8px;
+        line-height: 1.8;
+        pointer-events: none;
       }
 
-      html, body {
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: #000;
-      }
-
-      a-scene {
-        width: 100% !important;
-        height: 100% !important;
+      #status.found {
+        background: rgba(0, 150, 0, 0.85);
       }
 
       .arjs-loader {
         position: fixed;
         top: 0; left: 0;
         width: 100%; height: 100%;
-        background-color: rgba(0, 0, 0, 0.85);
-        z-index: 9999;
+        background-color: rgba(0,0,0,0.85);
+        z-index: 9998;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -40,7 +44,7 @@
 
       .arjs-loader div {
         text-align: center;
-        font-size: 1.2em;
+        font-size: 1.1em;
         color: white;
         padding: 20px;
         line-height: 2;
@@ -51,11 +55,10 @@
   <body>
 
     <div class="arjs-loader" id="loader">
-      <div>
-        Cargando experiencia AR...<br/>
-        Por favor espera...
-      </div>
+      <div>Cargando AR...<br/>Por favor espera...</div>
     </div>
+
+    <div id="status">⏳ Iniciando...</div>
 
     <a-scene
       vr-mode-ui="enabled: false;"
@@ -84,7 +87,6 @@
         smoothThreshold="5">
 
         <a-video
-          id="ar-video"
           src="#mi-video"
           width="1.6"
           height="0.9"
@@ -99,29 +101,50 @@
     </a-scene>
 
     <script>
-      const scene   = document.querySelector("a-scene");
-      const loader  = document.getElementById("loader");
-      const video   = document.getElementById("mi-video");
-      const marker  = document.getElementById("nft-marker");
+      const scene  = document.querySelector("a-scene");
+      const loader = document.getElementById("loader");
+      const video  = document.getElementById("mi-video");
+      const marker = document.getElementById("nft-marker");
+      const status = document.getElementById("status");
 
-      // Ocultar loader cuando carga la escena
+      // Estado 1: escena cargando
+      status.innerText = "⏳ Cargando escena AR...";
+
       scene.addEventListener("loaded", function () {
         loader.style.display = "none";
+        status.innerText = "✅ Escena lista\n📂 Cargando descriptores NFT...\n📷 Apunta a la imagen";
       });
 
-      // Respaldo: ocultar loader tras 10 segundos
       setTimeout(function () {
         loader.style.display = "none";
       }, 10000);
 
-      // Reproducir video cuando la imagen es detectada
+      // Verificar que los archivos NFT cargan
+      setTimeout(function() {
+        if (status.innerText.includes("Cargando descriptores")) {
+          status.innerText = "✅ Escena lista\n📷 Apunta la cámara a la imagen\n🔍 Buscando imagen...";
+        }
+      }, 5000);
+
+      // Cuando detecta la imagen
       marker.addEventListener("markerFound", function () {
-        video.play();
+        status.className = "found";
+        status.innerText = "🟢 ¡IMAGEN DETECTADA! Reproduciendo video...";
+        video.play().catch(function(e) {
+          status.innerText = "🟢 Imagen detectada\n⚠️ Error video: " + e.message;
+        });
       });
 
-      // Pausar video cuando pierde la imagen
+      // Cuando pierde la imagen
       marker.addEventListener("markerLost", function () {
+        status.className = "";
+        status.innerText = "🔴 Imagen perdida\n📷 Vuelve a apuntar a la imagen";
         video.pause();
+      });
+
+      // Errores generales
+      window.addEventListener("error", function(e) {
+        status.innerText = "❌ Error: " + e.message;
       });
     </script>
 
