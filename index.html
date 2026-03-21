@@ -9,39 +9,74 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
  
     <style>
-      * { margin: 0; padding: 0; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+ 
+      body {
+        overflow: hidden;
+        width: 100vw;
+        height: 100vh;
+      }
+ 
+      /* Forzar que el video de la camara NO tenga zoom */
+      video {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        object-fit: cover !important;
+        transform: none !important;
+        z-index: 0 !important;
+      }
+ 
+      /* Forzar que el canvas de AR.js tampoco tenga zoom */
+      canvas {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        transform: none !important;
+        z-index: 1 !important;
+      }
+ 
       .arjs-loader {
         height: 100%;
         width: 100%;
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
-        background-color: rgba(0, 0, 0, 0.8);
+        background-color: rgba(0, 0, 0, 0.85);
         z-index: 9999;
         display: flex;
         justify-content: center;
         align-items: center;
       }
+ 
       .arjs-loader div {
         text-align: center;
         font-size: 1.2em;
         color: white;
         padding: 20px;
+        line-height: 1.8;
       }
     </style>
   </head>
  
-  <body style="margin: 0; overflow: hidden;">
+  <body>
  
     <div class="arjs-loader" id="loader">
-      <div>Cargando experiencia AR...<br/>Por favor espera...</div>
+      <div>
+        Cargando experiencia AR...<br/>
+        Por favor espera...
+      </div>
     </div>
  
     <a-scene
       vr-mode-ui="enabled: false;"
       renderer="logarithmicDepthBuffer: true; precision: medium;"
       embedded
-      arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; cameraParametersUrl: https://raw.githack.com/AR-js-org/AR.js/master/data/data/camera_para.dat;">
+      arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
  
       <a-assets>
         <video
@@ -73,7 +108,7 @@
  
       </a-nft>
  
-      <a-entity camera="zoom: 1"></a-entity>
+      <a-entity camera></a-entity>
  
     </a-scene>
  
@@ -83,22 +118,35 @@
  
       scene.addEventListener("loaded", function () {
         loader.style.display = "none";
+ 
+        // Quitar cualquier transform o estilo de zoom que AR.js aplique
+        const allVideos = document.querySelectorAll("video");
+        allVideos.forEach(function(v) {
+          v.style.transform = "none";
+          v.style.width = "100vw";
+          v.style.height = "100vh";
+          v.style.objectFit = "cover";
+          v.style.position = "fixed";
+          v.style.top = "0";
+          v.style.left = "0";
+        });
+ 
+        const allCanvas = document.querySelectorAll("canvas");
+        allCanvas.forEach(function(c) {
+          c.style.transform = "none";
+          c.style.width = "100vw";
+          c.style.height = "100vh";
+          c.style.position = "fixed";
+          c.style.top = "0";
+          c.style.left = "0";
+        });
       });
  
+      // Respaldo: ocultar loader tras 10 segundos
       setTimeout(function () {
         loader.style.display = "none";
       }, 10000);
- 
-      // Forzar camara sin zoom cuando este lista
-      scene.addEventListener("arReady", function () {
-        const video = document.querySelector("video.arjs-video");
-        if (video) {
-          video.style.objectFit = "cover";
-          video.style.width = "100vw";
-          video.style.height = "100vh";
-          video.style.transform = "none";
-        }
-      });
     </script>
  
   </body>
+</html>
