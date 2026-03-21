@@ -3,33 +3,41 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Otavalango AR - Corrección</title>
+    <title>Otavalango AR - Debug</title>
 
     <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.3.0/dist/aframe-master.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar-nft.js"></script>
 
     <style>
-      body { margin: 0; overflow: hidden; background: #000; }
-
-      #status {
-        position: fixed; top: 10px; left: 10px; right: 10px;
-        z-index: 9999; background: rgba(0,0,0,0.75); color: white;
-        font-size: 14px; padding: 12px; border-radius: 8px;
-        pointer-events: none; text-align: center; font-family: sans-serif;
-      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { overflow: hidden; background: #000; font-family: sans-serif; }
 
       .arjs-loader {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background-color: rgba(0,0,0,0.9); z-index: 9998;
-        display: flex; flex-direction: column; justify-content: center; align-items: center;
-        font-family: sans-serif;
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.92); z-index: 9998;
+        display: flex; flex-direction: column;
+        justify-content: center; align-items: center;
+      }
+      .arjs-loader p { color: white; font-size: 1em; text-align: center; line-height: 2; margin-bottom: 20px; }
+
+      #start-btn {
+        padding: 14px 32px; font-size: 16px;
+        background: #28a745; color: white;
+        border: none; border-radius: 10px;
+        cursor: pointer; display: none;
       }
 
-      /* CLAVE 2: Botón para dar permiso al navegador de reproducir video */
-      #start-btn {
-        margin-top: 20px; padding: 15px 30px; font-size: 18px;
-        background: #28a745; color: white; border: none; border-radius: 8px;
-        cursor: pointer; display: none;
+      #log {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        z-index: 9999;
+        background: rgba(0,0,0,0.82);
+        color: #0f0; font-size: 11px;
+        padding: 8px 10px;
+        max-height: 40vh;
+        overflow-y: auto;
+        font-family: monospace;
+        line-height: 1.6;
       }
     </style>
   </head>
@@ -37,15 +45,14 @@
   <body>
 
     <div class="arjs-loader" id="loader">
-      <div id="loading-text" style="color:white; font-size:1.2em; margin-bottom: 20px; text-align: center;">
-        Cargando cámara y descriptores...<br>Esto puede tardar unos segundos.
-      </div>
-      <button id="start-btn">Comenzar Experiencia</button>
+      <p id="loading-text">Cargando AR...<br/>Por favor espera...</p>
+      <button id="start-btn">📷 Comenzar</button>
     </div>
 
-    <div id="status">⏳ Iniciando cámara...</div>
+    <div id="log">🔍 Iniciando...<br/></div>
 
     <a-scene
+      embedded
       vr-mode-ui="enabled: false;"
       renderer="logarithmicDepthBuffer: true; precision: medium;"
       arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
@@ -55,10 +62,7 @@
           id="mi-video"
           src="./assets/Loom_Operation_and_Direct_Gaze.mp4"
           preload="auto"
-          loop
-          muted
-          playsinline
-          webkit-playsinline>
+          loop muted playsinline webkit-playsinline>
         </video>
       </a-assets>
 
@@ -66,7 +70,6 @@
         id="nft-marker"
         type="nft"
         url="./assets/otavalango-museo-viviente"
-        emitevents="true" 
         smooth="true"
         smoothCount="10"
         smoothTolerance="0.01"
@@ -74,58 +77,108 @@
 
         <a-video
           src="#mi-video"
-          width="160"
-          height="90"
-          position="0 0 0"
+          width="1.6" height="0.9"
+          position="0 0 0.1"
           rotation="-90 0 0">
         </a-video>
 
       </a-nft>
 
       <a-entity camera></a-entity>
-
     </a-scene>
 
     <script>
-      const scene = document.querySelector("a-scene");
-      const loader = document.getElementById("loader");
+      const scene       = document.querySelector("a-scene");
+      const loader      = document.getElementById("loader");
       const loadingText = document.getElementById("loading-text");
-      const startBtn = document.getElementById("start-btn");
-      const video = document.getElementById("mi-video");
-      const marker = document.getElementById("nft-marker");
-      const status = document.getElementById("status");
+      const startBtn    = document.getElementById("start-btn");
+      const video       = document.getElementById("mi-video");
+      const marker      = document.getElementById("nft-marker");
+      const logDiv      = document.getElementById("log");
 
-      // Cuando los elementos 3D cargan, mostramos el botón
+      function log(msg) {
+        const time = new Date().toLocaleTimeString();
+        logDiv.innerHTML += "[" + time + "] " + msg + "<br/>";
+        logDiv.scrollTop = logDiv.scrollHeight;
+      }
+
+      log("Página cargada");
+
+      // Verificar que los archivos NFT son accesibles
+      const archivos = [
+        "./assets/otavalango-museo-viviente.fset",
+        "./assets/otavalango-museo-viviente.fset3",
+        "./assets/otavalango-museo-viviente.iset"
+      ];
+
+      archivos.forEach(function(url) {
+        fetch(url, { method: "HEAD" })
+          .then(function(r) {
+            const size = r.headers.get("content-length");
+            const kb = size ? Math.round(size / 1024) + " KB" : "tamaño desconocido";
+            log("✅ " + url.split("/").pop() + " → " + kb);
+          })
+          .catch(function(e) {
+            log("❌ NO ENCONTRADO: " + url.split("/").pop());
+          });
+      });
+
       scene.addEventListener("loaded", function () {
-        loadingText.innerHTML = "¡Cámara y archivos listos!";
+        log("✅ Escena AR cargada");
+        loadingText.innerHTML = "¡Listo!";
         startBtn.style.display = "block";
       });
 
-      // El usuario debe hacer clic para dar permiso al video
-      startBtn.addEventListener("click", function() {
+      setTimeout(function () {
+        if (loader.style.display !== "none") {
+          log("⚠️ Timeout: mostrando botón de todas formas");
+          loadingText.innerHTML = "Listo (timeout)";
+          startBtn.style.display = "block";
+        }
+      }, 15000);
+
+      startBtn.addEventListener("click", function () {
         loader.style.display = "none";
-        status.innerText = "✅ Escena lista\n📷 Apunta la cámara a la imagen";
-        
-        // Truco para sortear el bloqueo de Safari/Chrome
-        video.play().then(() => {
-            video.pause();
-        }).catch((e) => {
-            console.log("Esperando detección para reproducir.");
+        log("▶️ Experiencia iniciada - apunta a la imagen");
+
+        video.play().then(function() {
+          video.pause();
+          log("✅ Video pre-inicializado OK");
+        }).catch(function(e) {
+          log("⚠️ Video pre-init: " + e.message);
         });
+
+        setTimeout(function () {
+          document.querySelectorAll("video, canvas").forEach(function(el) {
+            el.style.width = "100vw";
+            el.style.height = "100vh";
+            el.style.position = "fixed";
+            el.style.top = "0"; el.style.left = "0";
+            el.style.transform = "none";
+            el.style.objectFit = "cover";
+          });
+        }, 300);
       });
 
-      // Eventos de detección
       marker.addEventListener("markerFound", function () {
-        status.style.background = "rgba(0, 150, 0, 0.85)";
-        status.innerText = "🟢 ¡IMAGEN DETECTADA! Reproduciendo...";
-        video.play();
+        log("🟢 ¡IMAGEN DETECTADA!");
+        video.play().catch(function(e) { log("❌ Error video: " + e.message); });
       });
 
       marker.addEventListener("markerLost", function () {
-        status.style.background = "rgba(0,0,0,0.75)";
-        status.innerText = "🔴 Imagen perdida\n📷 Vuelve a apuntar";
+        log("🔴 Imagen perdida");
         video.pause();
       });
+
+      // Capturar errores globales
+      window.addEventListener("error", function(e) {
+        log("❌ ERROR: " + e.message);
+      });
+
+      window.addEventListener("unhandledrejection", function(e) {
+        log("❌ PROMISE ERROR: " + e.reason);
+      });
     </script>
+
   </body>
 </html>
